@@ -1,8 +1,5 @@
 name: Deploy Node Exporter Ansible
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       node_exporter_version:
