@@ -1,6 +1,8 @@
 name: Deploy Node Exporter
-
 on:
+  push:
+    branches:
+      - stage
   workflow_dispatch:
     inputs:
       node_exporter_version:
