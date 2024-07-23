@@ -1,34 +1,46 @@
 ---
-- name: Install Prometheus Node Exporter
-  hosts: all
-  become: true
+- name: Install Prometheus Node Exporter #name of the task
+  hosts: all                             #this playbook will run on all servers listed in inventory file
+  become: true                           #execute commands with elevated (root) privileges
   vars:
-    node_exporter_version: "1.3.1"
+    node_exporter_version: "1.3.1"    #specifies the version of Node Exporter to be installed
   tasks:
-    - name: Update and upgrade apt packages
+    - name: Update and upgrade apt packages #Describes the task’s purpose
       apt:
-        update_cache: yes
-        upgrade: yes
+        update_cache: yes  #Ensures the package index is updated
+        upgrade: yes       #Upgrades all packages to their latest versions
 
+    #download URL for the specified version of Node Exporter
+    #dest: The local path where the downloaded file will be saved.
     - name: Download Prometheus Node Exporter
       get_url:
         url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
         dest: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
 
+    #Ansible module used to extract archive files
+    #dest: The directory where the files will be extracted.
     - name: Extract Node Exporter
       unarchive:
         src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
         dest: "/usr/local/bin/"
         remote_src: yes
 
+    #user: Ansible module to manage user accounts.
+    #name: The username to be created.
+    #shell: Sets the login shell for the user. /usr/sbin/nologin is used to prevent the user from logging in.
     - name: Create a system user for Node Exporter
       user:
         name: node_exporter
         shell: /usr/sbin/nologin
 
+    
     - name: Move Node Exporter binary
       command: mv /usr/local/bin/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter /usr/local/bin/node_exporter
-
+    
+    #file: Ansible module to manage file properties.
+    #path: Path to the Node Exporter binary.
+    #owner: Sets the file’s owner.#group: Sets the file’s group.
+    #mode: Sets the file’s permissions (755 means read, write, and execute for the owner, and read and execute for group and others).
     - name: Set permissions for Node Exporter binary
       file:
         path: /usr/local/bin/node_exporter
@@ -36,6 +48,8 @@
         group: node_exporter
         mode: '0755'
 
+    #dest: Path where the service file will be created.
+    #content: The content of the systemd service file for Node Exporter.
     - name: Create Node Exporter systemd service file
       copy:
         dest: /etc/systemd/system/node_exporter.service
@@ -52,9 +66,12 @@
           [Install]
           WantedBy=default.target
 
+    #command: Executes the command to reload systemd configuration and recognize the new service.
     - name: Reload systemd to apply the new service
       command: systemctl daemon-reload
 
+    #enabled: Ensures the service is enabled to start on boot.
+    #state: Ensures the service is started.
     - name: Enable and start Node Exporter service
       systemd:
         name: node_exporter
